@@ -1,0 +1,33 @@
+# ==========================================
+# SQL Database Project
+# ==========================================
+
+# Build output
+**/bin/
+**/obj/
+
+# DACPAC build artifacts
+*.dacpac
+
+# SQL project temporary files
+*.dbmdl
+*.jfm
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# Deployment generated files
+deployment.sql
+*.deployreport
+
+# Environment / secrets
+.env
+secrets.json
+
+# Publish profiles may contain connection information
+*.publish.xml
