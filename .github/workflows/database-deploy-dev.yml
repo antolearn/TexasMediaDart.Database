@@ -1,0 +1,34 @@
+name: Build and Deploy SQL Database - DEV
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore SQL Project
+        run: dotnet restore src/TexasMediaDart.Database/TexasMediaDart.Database.sqlproj
+
+      - name: Build SQL Project
+        run: dotnet build src/TexasMediaDart.Database/TexasMediaDart.Database.sqlproj --configuration Release
+
+      - name: Deploy to Azure SQL Database
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          path: src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac
+          action: publish
