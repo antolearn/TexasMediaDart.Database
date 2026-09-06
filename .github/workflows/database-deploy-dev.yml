@@ -7,6 +7,8 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: read
 jobs:
   build-and-deploy:
 
@@ -32,9 +34,47 @@ jobs:
           --configuration Release
           /p:DSP=Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider
 
-      - name: Deploy to Azure SQL Database
+      - name: Verify DACPAC
+        shell: pwsh
+        run: |
+          $dacpac = "src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac"
+
+          if (-not (Test-Path $dacpac)) {
+              Write-Error "DACPAC was not generated."
+              exit 1
+          }
+
+          Write-Host "DACPAC generated successfully:"
+          Write-Host $dacpac
+
+      - name: Upload Release DACPAC
+        uses: actions/upload-artifact@v4
+        with:
+          name: TexasMediaDart.Database-${{ github.sha }}
+          path: src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac
+          retention-days: 30
+
+  deploy-dev:
+
+    name: Deploy to DEV
+    needs: build
+
+    runs-on: windows-latest
+
+    environment: DEV
+
+    steps:
+
+      - name: Download Release DACPAC
+        uses: actions/download-artifact@v4
+        with:
+          name: TexasMediaDart.Database-${{ github.sha }}
+          path: dacpac
+
+      - name: Deploy DACPAC to DEV
         uses: azure/sql-action@v2.3
         with:
           connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          path: src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac
+          path: dacpac/TexasMediaDart.Database.dacpac
           action: publish
+    
