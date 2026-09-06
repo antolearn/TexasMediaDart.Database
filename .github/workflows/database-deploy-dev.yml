@@ -4,18 +4,17 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 permissions:
   contents: read
-jobs:
-  build-and-deploy:
 
+jobs:
+  build:
+    name: Build Release DACPAC
     runs-on: windows-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -50,25 +49,21 @@ jobs:
       - name: Upload Release DACPAC
         uses: actions/upload-artifact@v4
         with:
-          name: TexasMediaDart.Database-${{ github.sha }}
+          name: TexasMediaDart.Database
           path: src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac
           retention-days: 30
 
   deploy-dev:
-
     name: Deploy to DEV
     needs: build
-
     runs-on: windows-latest
-
     environment: DEV
 
     steps:
-
       - name: Download Release DACPAC
         uses: actions/download-artifact@v4
         with:
-          name: TexasMediaDart.Database-${{ github.sha }}
+          name: TexasMediaDart.Database
           path: dacpac
 
       - name: Deploy DACPAC to DEV
@@ -77,4 +72,3 @@ jobs:
           connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           path: dacpac/TexasMediaDart.Database.dacpac
           action: publish
-    

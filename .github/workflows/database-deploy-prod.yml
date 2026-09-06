@@ -1,0 +1,49 @@
+name: Deploy SQL Database - PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_run_id:
+        description: 'DEV workflow run ID containing approved DACPAC'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy-production:
+    name: Deploy to Production
+    runs-on: windows-latest
+    environment: PRODUCTION
+
+    steps:
+      - name: Download approved DACPAC
+        uses: actions/download-artifact@v4
+        with:
+          name: TexasMediaDart.Database
+          path: dacpac
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.dev_run_id }}
+
+      - name: Verify DACPAC Exists
+        shell: pwsh
+        run: |
+          $dacpac = "dacpac/TexasMediaDart.Database.dacpac"
+
+          if (-not (Test-Path $dacpac)) {
+              Write-Error "Approved DACPAC was not found."
+              exit 1
+          }
+
+          Write-Host "Approved DACPAC:"
+          Write-Host $dacpac
+
+      - name: Deploy DACPAC to Production
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          path: dacpac/TexasMediaDart.Database.dacpac
+          action: publish
