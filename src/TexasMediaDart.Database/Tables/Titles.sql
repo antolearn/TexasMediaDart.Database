@@ -6,17 +6,17 @@ CREATE TABLE [dbo].[Titles]
     
     [Description] NVARCHAR(500) NULL,
 
-    [CreatedBy] NVARCHAR(255) NOT NULL,
+    [CreatedBy] NVARCHAR(64) NOT NULL,
 
     [CreatedDateTimeUTC] DATETIME2 NOT NULL
         CONSTRAINT [DF_Titles_CreatedDateTimeUTC]
         DEFAULT (SYSUTCDATETIME()),
 
-    [ModifiedBy] NVARCHAR(255) NULL,
+    [ModifiedBy] NVARCHAR(64) NULL,
 
     [ModifiedDateTimeUTC] DATETIME2 NULL,
 
-    [ApprovedBy] NVARCHAR(255) NULL,
+    [ApprovedBy] NVARCHAR(64) NULL,
 
     [ApprovedDateTimeUTC] DATETIME2 NULL,
 
