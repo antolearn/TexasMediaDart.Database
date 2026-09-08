@@ -5,8 +5,11 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+
 jobs:
   build-and-validate:
+    name: Build and Validate SQL Database
     runs-on: windows-latest
 
     steps:
@@ -20,6 +23,29 @@ jobs:
 
       - name: Restore SQL Project
         run: dotnet restore src/TexasMediaDart.Database/TexasMediaDart.Database.sqlproj
+
+      - name: Generate build version
+        id: version
+        shell: pwsh
+        run: |
+          $date = Get-Date -Format "yyyy.MM.dd"
+          $build = "{0:D4}" -f [int]$env:GITHUB_RUN_NUMBER
+          $version = "$date.$build"
+
+          "BUILD_VERSION=$version" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "version=$version" | Out-File `
+            -FilePath $env:GITHUB_OUTPUT `
+            -Encoding utf8 `
+            -Append
+
+          Write-Host "Database Build Version: $version"
+
+          "### Database Build Version" >> $env:GITHUB_STEP_SUMMARY
+          "**$version**" >> $env:GITHUB_STEP_SUMMARY
 
       - name: Build SQL Project for Azure SQL
         run: >
@@ -41,9 +67,33 @@ jobs:
           Write-Host "DACPAC successfully generated:"
           Write-Host $dacpac
 
-      - name: Upload DACPAC Artifact
+      - name: Create versioned DACPAC
+        shell: pwsh
+        run: |
+          $source =
+            "src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac"
+
+          $artifactDirectory = "artifacts"
+
+          New-Item `
+            -ItemType Directory `
+            -Force `
+            -Path $artifactDirectory | Out-Null
+
+          $destination =
+            "$artifactDirectory/TexasMediaDart.Database-$env:BUILD_VERSION.dacpac"
+
+          Copy-Item `
+            -Path $source `
+            -Destination $destination
+
+          Write-Host "Versioned DACPAC:"
+          Write-Host $destination
+
+      - name: Upload versioned DACPAC artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TexasMediaDart.Database
-          path: src/TexasMediaDart.Database/bin/Release/TexasMediaDart.Database.dacpac
-          retention-days: 7
+          name: TexasMediaDart.Database-${{ env.BUILD_VERSION }}
+          path: artifacts/TexasMediaDart.Database-${{ env.BUILD_VERSION }}.dacpac
+          if-no-files-found: error
+          retention-days: 30
